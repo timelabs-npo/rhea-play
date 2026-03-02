@@ -7,7 +7,7 @@ options:
 
 packages:
   RheaKit:
-    path: ../packages/RheaKit
+    path: packages/RheaKit
   Pow:
     url: https://github.com/serg-alexv/Pow
     from: "1.0.0"
