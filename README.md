@@ -1,115 +1,77 @@
 # Rhea Play
 
-Native macOS operations centre for the Rhea multi-model AI advisory system. 12 panes, one window, everything at a glance.
+**Keep the whole argument in view.**
 
-## What it is
+Rhea Play is a native macOS operations application for the Rhea agent ecosystem. Agent messages, competing model answers, tasks, budgets, history, research records, and service health share one window and a keyboard-driven navigation rail.
 
-Rhea Play is a SwiftUI macOS app that gives operators a unified view into the Rhea system: live agent communication, tribunal debates, proof chains, knowledge graphs, task queues, and model health — all in a single window with keyboard navigation.
+An agent says the work is finished. The queue still shows it open. The budget moved, but the expected record never arrived. Those are useful disagreements. Play brings their separate views close enough that an operator can follow the trail.
 
-It connects to any Rhea Tribunal instance (local `localhost:8400` or cloud `rhea-tribunal.fly.dev`) and polls each endpoint independently so panes degrade gracefully when services are down.
+**Current form:** SwiftUI client source with 12 operational panes plus Config, a menu-bar interface, and a bundled RheaKit package. Service data and actions depend on the connected backend. The window shows one selected pane at a time.
 
-## Layout (12 panes)
+## Thirteen places to look
 
+| Shortcut | Pane | View into the system |
+|---|---|---|
+| `⌘1` | Radio | Agent communication |
+| `⌘2` | Dialog | Tribunal questions and responses |
+| `⌘3` | Governor | Budgets and provider state |
+| `⌘4` | Tasks | Task queue and actions |
+| `⌘5` | Pulse | Health and activity |
+| `⌘6` | Atlas | Embedded web visualization |
+| `⌘7` | History | Recorded sessions |
+| `⌘8` | Aletheia | Research and proof-related records |
+| `⌘9` | Ruliad | Ontologies and hypotheses |
+| `⌘0` | Procs | Process/session views and controls |
+| `⌘-` | Models | Provider/model information |
+| `⌘=` | NDI | Media-service status and controls |
+| `⌘,` | Config | Connection and preferences |
+
+The list is defined by [PlayShell.Pane](Sources/PlayApp.swift). A record displayed under “proof” is still a record from a service; the pane's name does not establish its truth or immutability.
+
+## Follow the signal
+
+```text
+Selected pane ↔ Rhea service endpoints
+      ↑
+Shared RheaKit state + pane-specific requests
+      ↓
+Window / navigation / menu-bar view
 ```
-┌─────────────────────────────────────────────────────┐
-│  RHEA  [RADIO][DIALOG][GOVERNOR][TASKS][PULSE]...   │  ← sidebar nav
-├──────────┬──────────────────────────────────────────┤
-│          │                                          │
-│ Sidebar  │           Active Pane                   │
-│          │                                          │
-│  ⌘1 RADIO│  Live agent communication feed          │
-│  ⌘2 DIALOG  Tribunal — submit claims, see debate   │
-│  ⌘3 GOV  │  Token budgets, cost, provider status   │
-│  ⌘4 TASKS│  Task queue with claim/complete/block   │
-│  ⌘5 PULSE│  System heartbeat and health metrics    │
-│  ⌘6 ATLAS│  3D knowledge graph (Three.js via WKWebView) │
-│  ⌘7 HIST │  SQL-backed session history browser     │
-│  ⌘8 ALETH│  Immutable proof chain browser          │
-│  ⌘9 RULI │  Ontology explorer — hypothesis lifecycle│
-│  ⌘0 PROCS│  Running process monitor                │
-│  ⌘- MODEL│  Available model registry across providers│
-│  ⌘= NDI  │  Video transport status (libndi v6.2.0) │
-│  ⌘, CONF │  Settings — API URL, auth, preferences  │
-└──────────┴──────────────────────────────────────────┘
-```
 
-## Keyboard Shortcuts
+[RheaStore](packages/RheaKit/Sources/RheaKit/RheaStore.swift) refreshes shared state. [RheaAPI](packages/RheaKit/Sources/RheaKit/RheaAPI.swift) provides service calls; some views also make their own requests. [PlayApp.swift](Sources/PlayApp.swift) contains the shell and additional pane implementations.
 
-| Shortcut | Pane     |
-|----------|----------|
-| `⌘1`     | Radio    |
-| `⌘2`     | Dialog   |
-| `⌘3`     | Governor |
-| `⌘4`     | Tasks    |
-| `⌘5`     | Pulse    |
-| `⌘6`     | Atlas    |
-| `⌘7`     | History  |
-| `⌘8`     | Aletheia |
-| `⌘9`     | Ruliad   |
-| `⌘0`     | Procs    |
-| `⌘-`     | Models   |
-| `⌘=`     | NDI      |
-| `⌘,`     | Config   |
+This is where the map of a system becomes useful: put a message next to its task, a task next to its cost, and a claimed result next to its record. Their relationship is an investigation path, not automatic proof that one caused the other.
 
-Menu bar icon shows aggregate agent health at a glance.
+NDI status, discovery, and test-pattern controls call backend endpoints under `/cc/ndi`. **NDI runtime availability belongs to that server.** Installing a media library on the Mac does not by itself establish an operational media service.
 
-## Build
+## Build from source
 
-### Prerequisites
-
-- macOS 14.0+
-- Xcode 15+ (or Xcode 16 beta for xcodeVersion 26.2)
-- [xcodegen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
-
-### Steps
+Use Xcode, XcodeGen, and a macOS SDK supporting the macOS 14 deployment target. [project.yml](project.yml) records the project settings; it currently names Xcode 26.2 and Swift 5.9. [RheaKit's manifest](packages/RheaKit/Package.swift) lists its dependencies.
 
 ```bash
-# 1. Clone
-git clone https://github.com/timelabs-npo/rhea-play.git
-cd rhea-play
-
-# 2. Generate the Xcode project (not committed — generated on demand)
 xcodegen generate
-
-# 3. Build (Debug)
-xcodebuild -scheme RheaPlay -configuration Debug build
-
-# 4. Build (Release)
-xcodebuild -scheme RheaPlay -configuration Release build
+xcodebuild -scheme RheaPlay -configuration Debug \
+  -derivedDataPath /tmp/rhea-play-build \
+  CODE_SIGNING_ALLOWED=NO build
 ```
 
-Or open `RheaPlay.xcodeproj` in Xcode after step 2 and run from there.
+The generated project is `RheaPlay.xcodeproj`. Open it in Xcode to inspect or run the app. This is a local build entrance; distribution additionally requires your signing and provisioning configuration.
 
-Pre-built DMG is available in [Releases](https://github.com/timelabs-npo/rhea-project/releases).
+## Know which server is on screen
 
-## Dependencies
+[AppConfig](packages/RheaKit/Sources/RheaKit/AppConfig.swift) defaults macOS to `https://rhea-tribunal.fly.dev`. Localhost is the conditional default for the iOS simulator, not for this Mac app.
 
-| Package | Purpose |
-|---------|---------|
-| [RheaKit](packages/RheaKit/) | Shared SwiftUI views and API layer (local package, also used by the iOS app) |
-| [Pow](https://github.com/serg-alexv/Pow) | Physics-based SwiftUI transition effects |
-| [GRDB.swift](https://github.com/groue/GRDB.swift) | SQLite — history browser, local task cache |
-| [swift-collections](https://github.com/apple/swift-collections) | OrderedDictionary for pane registry |
-| [KeychainAccess](https://github.com/kishikawakatsumi/KeychainAccess) | JWT token storage |
-| [swift-markdown-ui](https://github.com/gonzalezreal/swift-markdown-ui) | Markdown rendering in Dialog pane |
-| [Starscream](https://github.com/daltoniam/Starscream) | WebSocket for live Radio feed |
+The current startup migration also replaces saved localhost/private-network addresses with the cloud address on non-simulator launches. Config offers an API address field, but a local selection should not be assumed to survive a relaunch. Confirm the displayed target before using service controls.
 
-RheaKit is included as a local package at `packages/RheaKit/` — no separate clone needed.
+The horizon is a control room that makes contradictions harder to overlook. First, make every indicator answerable to its source.
 
-## Architecture
+## The surrounding system
 
-SwiftUI + `NavigationSplitView`. Each pane is a self-contained view that polls its own Tribunal API endpoint. Panes are registered as an enum (`Pane`) with associated icon, label, and keyboard shortcut.
+Start at [the Rhea family entrance](https://blueshoes.space/rhea/).
 
-The app talks to one configurable base URL (default: `localhost:8400`). Every pane constructs its own URLSession requests — no shared data layer beyond `RheaStore` for auth state.
-
-NDI pane requires `libndi` v6.2.0 installed locally at `/usr/local/lib`. On systems without it the pane shows a graceful "requires local server" message.
-
-## Part of the Rhea ecosystem
-
-- **Tribunal API** — backend at [timelabs-npo/rhea-project](https://github.com/timelabs-npo/rhea-project) (Python, Fly.io)
-- **iOS app** — RheaPreview on TestFlight sharing the same RheaKit package
-- **TimeLabs NPO** — [timelabs-npo](https://github.com/timelabs-npo)
-
-## License
+- [Rhea / Tribunal](https://github.com/timelabs-npo/rhea-project) contains the coordination and service work.
+- [Rhea Atlas](https://github.com/timelabs-npo/rhea-atlas) develops the browser instrument.
+- [Rhea iOS](https://github.com/timelabs-npo/rhea-ios) carries related SwiftUI views to the phone.
+- [Rhea CLI](https://github.com/timelabs-npo/rhea-cli) provides the terminal command surface.
 
 MIT — see [LICENSE](LICENSE).
